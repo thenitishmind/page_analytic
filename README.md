@@ -11,7 +11,7 @@ Repository: [https://github.com/thenitishmind/page_analytic.git](https://github.
 
 ---
 
-## 🛠️ Tech Stack & Technologies Used
+## 🛠️ Complete Technologies & Tech Stack List:
 
 - **Core Language:** Python 3.13+
 - **Web Framework:** [FastAPI](https://fastapi.tiangolo.com/) (High-performance Async Web Framework)
