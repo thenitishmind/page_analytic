@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Settings — Page Analytics{% endblock %}
+{% block content %}
+<div class="page-header"><h1>⚙️ Settings</h1></div>
+
+{% if message %}
+<div class="alert alert-success">{{ message }}</div>
+{% endif %}
+{% if import_result is defined and import_result and import_result.errors %}
+<div class="alert alert-warning">
+    <strong>Import Errors:</strong>
+    <ul>{% for e in import_result.errors[:5] %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<!-- Theme -->
+<div class="card">
+    <div class="card-header"><h3>🎨 Theme</h3></div>
+    <form method="POST" action="/settings/theme" class="form-inline">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="theme">Color Theme</label>
+                <select name="theme" id="theme">
+                    <option value="dark" {{ 'selected' if user.theme == 'dark' else '' }}>Dark Mode</option>
+                    <option value="light" {{ 'selected' if user.theme == 'light' else '' }}>Light Mode</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Theme</button>
+        </div>
+    </form>
+</div>
+
+<!-- Alert Thresholds -->
+<div class="card">
+    <div class="card-header"><h3>🔔 Alert Thresholds</h3><span class="card-subtitle">Configure when alerts are triggered</span></div>
+    <form method="POST" action="/settings/alerts">
+        <div class="settings-grid">
+            <div class="form-group">
+                <label for="view_increase">View Increase Alert (%)</label>
+                <input type="number" step="0.1" name="view_increase_threshold" id="view_increase" value="{{ alert_config.view_increase_threshold if alert_config else 25 }}">
+                <span class="form-hint">Positive alert when views increase by this percentage</span>
+            </div>
+            <div class="form-group">
+                <label for="view_decrease">View Decrease Warning (%)</label>
+                <input type="number" step="0.1" name="view_decrease_threshold" id="view_decrease" value="{{ alert_config.view_decrease_threshold if alert_config else 20 }}">
+                <span class="form-hint">Warning when views decrease by this percentage</span>
+            </div>
+            <div class="form-group">
+                <label for="eng_low">Engagement Low Threshold (%)</label>
+                <input type="number" step="0.1" name="engagement_low_threshold" id="eng_low" value="{{ alert_config.engagement_low_threshold if alert_config else 3 }}">
+                <span class="form-hint">Alert when engagement rate drops below this value</span>
+            </div>
+            <div class="form-group">
+                <label for="fol_drop">Follower Drop Alert (%)</label>
+                <input type="number" step="0.1" name="follower_drop_threshold" id="fol_drop" value="{{ alert_config.follower_drop_threshold if alert_config else 10 }}">
+                <span class="form-hint">Alert when follower growth drops by this percentage</span>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Alerts</button>
+    </form>
+</div>
+
+<!-- Performance Score Weights -->
+<div class="card">
+    <div class="card-header"><h3>⭐ Performance Score Weights</h3><span class="card-subtitle">Adjust how the performance score is calculated (must sum to 1.0)</span></div>
+    <form method="POST" action="/settings/weights">
+        <div class="settings-grid">
+            <div class="form-group">
+                <label>View Growth</label>
+                <input type="number" step="0.05" name="weight_view_growth" value="{{ score_weights.weight_view_growth if score_weights else 0.25 }}" min="0" max="1">
+            </div>
+            <div class="form-group">
+                <label>Engagement</label>
+                <input type="number" step="0.05" name="weight_engagement" value="{{ score_weights.weight_engagement if score_weights else 0.25 }}" min="0" max="1">
+            </div>
+            <div class="form-group">
+                <label>Follower Growth</label>
+                <input type="number" step="0.05" name="weight_follower_growth" value="{{ score_weights.weight_follower_growth if score_weights else 0.20 }}" min="0" max="1">
+            </div>
+            <div class="form-group">
+                <label>Consistency</label>
+                <input type="number" step="0.05" name="weight_consistency" value="{{ score_weights.weight_consistency if score_weights else 0.15 }}" min="0" max="1">
+            </div>
+            <div class="form-group">
+                <label>Share Rate</label>
+                <input type="number" step="0.05" name="weight_share_rate" value="{{ score_weights.weight_share_rate if score_weights else 0.15 }}" min="0" max="1">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Weights</button>
+    </form>
+</div>
+
+<!-- Data Import -->
+<div class="card">
+    <div class="card-header"><h3>📥 Import Data</h3></div>
+    
+    <!-- File Upload -->
+    <div class="import-section">
+        <h4>Upload CSV or Excel</h4>
+        <p class="card-subtitle">Expected columns: date, views, followers, new_followers, lost_followers, likes, comments, shares, posts</p>
+        <form method="POST" action="/import/upload" enctype="multipart/form-data" class="form-inline">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="import_page">Page</label>
+                    <select name="page_id" id="import_page" required>
+                        {% for p in pages %}<option value="{{ p.id }}">{{ p.page_name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="import_file">File (.csv, .xlsx)</label>
+                    <input type="file" name="file" id="import_file" accept=".csv,.xlsx,.xls" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Manual Entry -->
+    <div class="import-section">
+        <h4>Manual Entry</h4>
+        <form method="POST" action="/import/manual">
+            <div class="settings-grid">
+                <div class="form-group">
+                    <label>Page</label>
+                    <select name="page_id" required>{% for p in pages %}<option value="{{ p.id }}">{{ p.page_name }}</option>{% endfor %}</select>
+                </div>
+                <div class="form-group"><label>Date</label><input type="date" name="metric_date" required></div>
+                <div class="form-group"><label>Views</label><input type="number" name="views" value="0" min="0"></div>
+                <div class="form-group"><label>Followers</label><input type="number" name="followers" value="0" min="0"></div>
+                <div class="form-group"><label>New Followers</label><input type="number" name="new_followers" value="0" min="0"></div>
+                <div class="form-group"><label>Lost Followers</label><input type="number" name="lost_followers" value="0" min="0"></div>
+                <div class="form-group"><label>Likes</label><input type="number" name="likes" value="0" min="0"></div>
+                <div class="form-group"><label>Comments</label><input type="number" name="comments" value="0" min="0"></div>
+                <div class="form-group"><label>Shares</label><input type="number" name="shares" value="0" min="0"></div>
+                <div class="form-group"><label>Posts</label><input type="number" name="posts" value="0" min="0"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Entry</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

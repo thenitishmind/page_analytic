@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./page_analytics.db
+      - SECRET_KEY=docker-secret-key-change-in-production
+      - DEMO_MODE=true
+      - DEBUG=false
+    volumes:
+      - app-data:/app
+    restart: unless-stopped
+
+  # Optional: PostgreSQL for production
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_DB: page_analytics
+  #     POSTGRES_USER: analytics
+  #     POSTGRES_PASSWORD: changeme
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+volumes:
+  app-data:
+  # postgres-data:

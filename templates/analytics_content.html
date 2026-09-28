@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Content Analytics — Page Analytics{% endblock %}
+{% block content %}
+{% if not has_data %}
+<div class="empty-state"><div class="empty-icon">🎬</div><h2>No Content Data</h2><p>Import content data to see analytics.</p></div>
+{% else %}
+<div class="page-header"><h1>🎬 Content Analytics</h1>{% if is_demo %}<span class="badge badge-demo">DEMO</span>{% endif %}</div>
+
+<!-- Content Type Comparison -->
+{% if type_analysis.has_data %}
+<div class="card">
+    <div class="card-header"><h3>📊 Content Type Performance</h3></div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead><tr><th>Type</th><th>Count</th><th>Avg Views</th><th>Avg Likes</th><th>Avg Shares</th><th>Avg Comments</th><th>Engagement</th></tr></thead>
+            <tbody>
+                {% for t in type_analysis.types %}
+                <tr>
+                    <td><span class="badge badge-type">{{ t.type }}</span></td>
+                    <td>{{ t.count }}</td><td>{{ format_number(t.avg_views) }}</td>
+                    <td>{{ format_number(t.avg_likes) }}</td><td>{{ format_number(t.avg_shares) }}</td>
+                    <td>{{ format_number(t.avg_comments) }}</td><td>{{ "%.2f"|format(t.engagement) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="chart-container" style="height:300px"><canvas id="typeChart"></canvas></div>
+</div>
+{% endif %}
+
+<!-- Best Posting Day -->
+{% if best_day.has_data %}
+<div class="card">
+    <div class="card-header"><h3>📅 Best Posting Days</h3><span class="card-subtitle">{{ best_day.note }}</span></div>
+    <p class="highlight-text">Highest historical average views occurred on: <strong>{{ best_day.best_day }}</strong></p>
+    <div class="table-responsive">
+        <table class="data-table"><thead><tr><th>Day</th><th>Posts</th><th>Avg Views</th><th>Avg Engagement</th></tr></thead>
+            <tbody>{% for d in best_day.days %}<tr><td>{{ d.day }}</td><td>{{ d.posts }}</td><td>{{ format_number(d.avg_views) }}</td><td>{{ "%.2f"|format(d.avg_engagement) }}%</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Best Posting Time -->
+{% if best_time.has_data %}
+<div class="card">
+    <div class="card-header"><h3>⏰ Best Posting Time</h3></div>
+    {% if best_time.insufficient_data %}
+    <div class="warning-item">{{ best_time.note }}</div>
+    {% else %}
+    <p class="highlight-text">Best historical posting time: <strong>{{ best_time.best_time }}</strong></p>
+    <p class="card-subtitle">{{ best_time.note }}</p>
+    {% endif %}
+    <div class="table-responsive">
+        <table class="data-table"><thead><tr><th>Time</th><th>Posts</th><th>Avg Views</th><th>Engagement</th><th>Reliable?</th></tr></thead>
+            <tbody>{% for h in best_time.hours %}{% if h.posts > 0 %}<tr><td>{{ h.label }}</td><td>{{ h.posts }}</td><td>{{ format_number(h.avg_views) }}</td><td>{{ "%.2f"|format(h.avg_engagement) }}%</td><td>{{ '✅' if h.reliable else '⚠️' }}</td></tr>{% endif %}{% endfor %}</tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Top Content Tabs -->
+<div class="card">
+    <div class="card-header"><h3>🏆 Top Content</h3></div>
+    <div class="tabs" id="topContentTabs">
+        <button class="tab active" onclick="showTab('viewed')">Most Viewed</button>
+        <button class="tab" onclick="showTab('shared')">Most Shared</button>
+        <button class="tab" onclick="showTab('commented')">Most Commented</button>
+        <button class="tab" onclick="showTab('engaged')">Highest Engagement</button>
+    </div>
+    
+    <div class="tab-content active" id="tab-viewed">
+        <div class="content-list">{% for item in top_viewed %}
+        <div class="content-item"><div class="content-rank">#{{ loop.index }}</div><div class="content-info"><span class="content-title">{{ item.title }}</span><span class="content-meta"><span class="badge badge-type">{{ item.content_type }}</span></span></div><div class="content-stats"><span>👁️ {{ format_number(item.views) }}</span><span>❤️ {{ format_number(item.likes) }}</span><span>💬 {{ item.comments }}</span><span>🔗 {{ item.shares }}</span></div></div>
+        {% endfor %}</div>
+    </div>
+    <div class="tab-content" id="tab-shared">
+        <div class="content-list">{% for item in top_shared %}
+        <div class="content-item"><div class="content-rank">#{{ loop.index }}</div><div class="content-info"><span class="content-title">{{ item.title }}</span></div><div class="content-stats"><span>🔗 {{ format_number(item.shares) }}</span><span>👁️ {{ format_number(item.views) }}</span></div></div>
+        {% endfor %}</div>
+    </div>
+    <div class="tab-content" id="tab-commented">
+        <div class="content-list">{% for item in top_commented %}
+        <div class="content-item"><div class="content-rank">#{{ loop.index }}</div><div class="content-info"><span class="content-title">{{ item.title }}</span></div><div class="content-stats"><span>💬 {{ format_number(item.comments) }}</span><span>👁️ {{ format_number(item.views) }}</span></div></div>
+        {% endfor %}</div>
+    </div>
+    <div class="tab-content" id="tab-engaged">
+        <div class="content-list">{% for item in top_engagement %}
+        <div class="content-item"><div class="content-rank">#{{ loop.index }}</div><div class="content-info"><span class="content-title">{{ item.title }}</span></div><div class="content-stats"><span class="engagement-badge">{{ "%.1f"|format(item.engagement_rate) }}%</span><span>👁️ {{ format_number(item.views) }}</span></div></div>
+        {% endfor %}</div>
+    </div>
+</div>
+
+<!-- Low Performing -->
+{% if low_content %}
+<div class="card">
+    <div class="card-header"><h3>⚠️ Content That Needs Attention</h3></div>
+    <div class="content-list">{% for item in low_content %}
+    <div class="content-item low-perf">
+        <div class="content-info"><span class="content-title">{{ item.title }}</span><span class="content-meta">Views: {{ format_number(item.views) }} | Page Avg: {{ format_number(item.avg_views) }}</span></div>
+        <div class="content-note">{{ item.note }}</div>
+        {% if item.improvement_area %}<div class="improvement-tip">💡 {{ item.improvement_area }}</div>{% endif %}
+    </div>
+    {% endfor %}</div>
+</div>
+{% endif %}
+
+<!-- All Content Table -->
+{% if content_perf.has_data %}
+<div class="card">
+    <div class="card-header"><h3>📋 All Content Performance</h3><span class="card-subtitle">Avg engagement: {{ content_perf.avg_engagement }}% | Avg views: {{ format_number(content_perf.avg_views) }}</span></div>
+    <div class="table-responsive">
+        <table class="data-table" id="contentTable">
+            <thead><tr><th>Content</th><th>Type</th><th>Views</th><th>Likes</th><th>Comments</th><th>Shares</th><th>Engagement</th><th>Performance</th></tr></thead>
+            <tbody>{% for item in content_perf['items'][:50] %}
+            <tr>
+                <td class="td-title">{{ item.title }}</td>
+                <td><span class="badge badge-type">{{ item.content_type }}</span></td>
+                <td>{{ format_number(item.views) }}</td><td>{{ format_number(item.likes) }}</td>
+                <td>{{ item.comments }}</td><td>{{ item.shares }}</td>
+                <td>{{ "%.2f"|format(item.engagement_rate) }}%</td>
+                <td><span class="badge badge-perf-{{ item.performance|lower|replace(' ', '-') }}">{{ item.performance }}</span></td>
+            </tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+}
+
+{% if has_data and type_analysis is defined and type_analysis.has_data %}
+document.addEventListener('DOMContentLoaded', function() {
+    const types = {{ type_analysis.types | tojson }};
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    new Chart(document.getElementById('typeChart'), {
+        type: 'bar',
+        data: {
+            labels: types.map(t => t.type),
+            datasets: [
+                { label: 'Avg Views', data: types.map(t => t.avg_views), backgroundColor: 'rgba(99,102,241,0.7)' },
+                { label: 'Avg Likes', data: types.map(t => t.avg_likes), backgroundColor: 'rgba(239,68,68,0.7)' },
+                { label: 'Avg Shares', data: types.map(t => t.avg_shares), backgroundColor: 'rgba(168,85,247,0.7)' },
+            ],
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: isDark ? '#e2e8f0' : '#1e293b' } } },
+            scales: {
+                x: { ticks: { color: isDark ? '#94a3b8' : '#475569' } },
+                y: { ticks: { color: isDark ? '#94a3b8' : '#475569' } },
+            },
+        },
+    });
+});
+{% endif %}
+</script>
+{% endblock %}

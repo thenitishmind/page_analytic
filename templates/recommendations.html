@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Recommendations — Page Analytics{% endblock %}
+{% block content %}
+{% if not has_data %}
+<div class="empty-state"><div class="empty-icon">💡</div><h2>No Data</h2></div>
+{% else %}
+<div class="page-header"><h1>💡 Recommendations & Action Plan</h1>{% if is_demo %}<span class="badge badge-demo">DEMO</span>{% endif %}</div>
+
+<!-- Performance Summary -->
+{% if performance_summary %}
+<div class="card recommendations-card">
+    <div class="card-header"><h3>🎯 Today's Performance</h3></div>
+    {% if performance_summary.performance %}<p class="performance-narrative">{{ performance_summary.performance }}</p>{% endif %}
+    
+    {% if performance_summary.what_is_working %}
+    <div class="rec-section"><h4 class="rec-title positive">✅ What Is Working</h4>
+        {% for item in performance_summary.what_is_working %}<p class="rec-item">{{ item }}</p>{% endfor %}
+    </div>{% endif %}
+    
+    {% if performance_summary.what_needs_attention %}
+    <div class="rec-section"><h4 class="rec-title warning">⚠️ What Needs Attention</h4>
+        {% for item in performance_summary.what_needs_attention %}<p class="rec-item">{{ item }}</p>{% endfor %}
+    </div>{% endif %}
+    
+    <div class="rec-section"><h4 class="rec-title">📋 What To Do Today</h4>
+        <ol class="action-list">{% for item in performance_summary.what_to_do %}<li>{{ item }}</li>{% endfor %}</ol>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recommendations -->
+{% if recommendations %}
+<div class="card">
+    <div class="card-header"><h3>💡 Data-Driven Recommendations</h3></div>
+    <div class="recs-list">
+        {% for rec in recommendations %}
+        <div class="rec-card priority-{{ rec.priority }}">
+            <div class="rec-card-header">
+                <span class="rec-category badge">{{ rec.category | capitalize }}</span>
+                <span class="rec-priority">Priority {{ rec.priority }}</span>
+            </div>
+            <p class="rec-text">{{ rec.recommendation }}</p>
+            <p class="rec-basis">📊 Based on: {{ rec.data_basis }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Daily Action Plan -->
+{% if action_plan %}
+<div class="card action-plan-card">
+    <div class="card-header"><h3>📋 Today's Action Plan</h3></div>
+    <div class="action-plan-grid">
+        <div class="action-section"><h4>🌅 Morning</h4><ul>{% for item in action_plan.morning %}<li>{{ item }}</li>{% endfor %}</ul></div>
+        <div class="action-section"><h4>🎬 Content</h4><ul>{% for item in action_plan.content %}<li>{{ item }}</li>{% endfor %}</ul></div>
+        <div class="action-section"><h4>💬 Engagement</h4><ul>{% for item in action_plan.engagement %}<li>{{ item }}</li>{% endfor %}</ul></div>
+        <div class="action-section"><h4>🌙 Evening</h4><ul>{% for item in action_plan.evening %}<li>{{ item }}</li>{% endfor %}</ul></div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Priorities -->
+{% if priorities %}
+<div class="card priorities-card">
+    <div class="card-header"><h3>🎯 Today's Priorities</h3></div>
+    <ol class="priorities-list">{% for p in priorities %}<li class="priority-item">{{ p }}</li>{% endfor %}</ol>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

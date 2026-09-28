@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Pages — Page Analytics{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Your Pages</h1>
+</div>
+
+<!-- Add Page Form -->
+<div class="card">
+    <div class="card-header"><h3>➕ Add New Page</h3></div>
+    <form method="POST" action="/pages" class="form-inline" id="addPageForm">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="platform">Platform</label>
+                <select name="platform" id="platform" required>
+                    <option value="facebook">Facebook</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="twitter">Twitter/X</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="page_name">Page Name</label>
+                <input type="text" name="page_name" id="page_name" placeholder="My Page" required>
+            </div>
+            <div class="form-group">
+                <label for="page_url">Page URL (optional)</label>
+                <input type="url" name="page_url" id="page_url" placeholder="https://...">
+            </div>
+            <button type="submit" class="btn btn-primary">Add Page</button>
+        </div>
+    </form>
+</div>
+
+<!-- Pages List -->
+<div class="card">
+    <div class="card-header"><h3>📄 Your Pages</h3></div>
+    {% if pages %}
+    <div class="pages-grid">
+        {% for page in pages %}
+        <div class="page-card" id="page-{{ page.id }}">
+            <div class="page-card-header">
+                <span class="page-platform-icon">
+                    {% if page.platform == 'facebook' %}📘{% elif page.platform == 'youtube' %}📺{% elif page.platform == 'instagram' %}📸{% elif page.platform == 'tiktok' %}🎵{% else %}📄{% endif %}
+                </span>
+                <div>
+                    <h4>{{ page.page_name }}</h4>
+                    <span class="badge badge-platform">{{ page.platform | capitalize }}</span>
+                </div>
+            </div>
+            <div class="page-card-actions">
+                <a href="/dashboard?page_id={{ page.id }}" class="btn btn-sm btn-primary">View Dashboard</a>
+                <form method="POST" action="/pages/{{ page.id }}/delete" style="display:inline" 
+                      onsubmit="return confirm('Delete this page and all its data?')">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+            </div>
+            <div class="page-card-meta">
+                Added: {{ page.created_at.strftime('%d %b %Y') if page.created_at else 'N/A' }}
+                {% if page.page_url %} | <a href="{{ page.page_url }}" target="_blank">Visit ↗</a>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-sm">
+        <p>No pages added yet. Add your first page above.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

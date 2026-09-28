@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Growth Analytics — Page Analytics{% endblock %}
+{% block content %}
+{% if not has_data %}
+<div class="empty-state"><div class="empty-icon">📈</div><h2>No Data</h2></div>
+{% else %}
+<div class="page-header"><h1>📈 Growth Analytics</h1>{% if is_demo %}<span class="badge badge-demo">DEMO</span>{% endif %}</div>
+
+{% if follower_data.has_data %}
+<div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">👥</span><span class="kpi-label">Current Followers</span></div><div class="kpi-value">{{ format_number(follower_data.current_followers) }}</div></div>
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">➕</span><span class="kpi-label">New Followers</span></div><div class="kpi-value">{{ format_number(follower_data.new_followers) }}</div></div>
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">➖</span><span class="kpi-label">Lost Followers</span></div><div class="kpi-value">{{ format_number(follower_data.lost_followers) }}</div></div>
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">📊</span><span class="kpi-label">Net Growth</span></div><div class="kpi-value {{ 'positive' if follower_data.net_growth > 0 else 'negative' }}">{{ '+' if follower_data.net_growth > 0 else '' }}{{ format_number(follower_data.net_growth) }}</div></div>
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">📈</span><span class="kpi-label">Growth %</span></div><div class="kpi-value {{ 'positive' if follower_data.growth_percent > 0 else 'negative' }}">{{ "%.2f"|format(follower_data.growth_percent) }}%</div><div class="kpi-change">{{ follower_data.growth_trend }}</div></div>
+</div>
+
+<div class="charts-grid">
+    <div class="card chart-card"><div class="card-header"><h3>👥 Daily Followers</h3></div><div class="chart-container"><canvas id="dailyFollowersChart"></canvas></div></div>
+    <div class="card chart-card"><div class="card-header"><h3>📈 View Growth</h3></div><div class="chart-container"><canvas id="viewGrowthChart"></canvas></div></div>
+</div>
+
+<div class="card chart-card">
+    <div class="card-header"><h3>➕ New vs Lost Followers</h3></div>
+    <div class="chart-container"><canvas id="newLostChart"></canvas></div>
+</div>
+{% endif %}
+
+{% if view_data is defined and view_data.has_data %}
+<div class="card">
+    <div class="card-header"><h3>📊 Growth Summary</h3></div>
+    <div class="analysis-grid">
+        <div class="analysis-item"><span class="analysis-label">View Growth</span><span class="analysis-value {{ 'positive' if view_data.growth_percent > 0 else 'negative' }}">{{ "%.1f"|format(view_data.growth_percent) }}%</span></div>
+        <div class="analysis-item"><span class="analysis-label">Follower Growth</span><span class="analysis-value {{ 'positive' if follower_data.growth_percent > 0 else 'negative' }}">{{ "%.2f"|format(follower_data.growth_percent) }}%</span></div>
+        <div class="analysis-item"><span class="analysis-label">View Trend</span><span class="analysis-value">{{ view_data.growth_label }}</span></div>
+        <div class="analysis-item"><span class="analysis-label">Follower Trend</span><span class="analysis-value">{{ follower_data.growth_trend }}</span></div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if has_data and follower_data is defined and follower_data.has_data %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dates = {{ chart_dates | tojson }};
+    const followers = {{ chart_followers | tojson }};
+    const newF = {{ chart_new_followers | tojson }};
+    const views = {{ chart_views | tojson }};
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gc = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const tc = isDark ? '#94a3b8' : '#475569';
+    const opts = { responsive:true, maintainAspectRatio:false, scales:{x:{grid:{color:gc},ticks:{color:tc}},y:{grid:{color:gc},ticks:{color:tc}}}, plugins:{legend:{labels:{color:isDark?'#e2e8f0':'#1e293b'}}} };
+    
+    new Chart(document.getElementById('dailyFollowersChart'), { type:'line', data:{ labels:dates.map(d=>d.slice(5)), datasets:[{label:'Followers', data:followers, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', fill:true, tension:0.4}] }, options:opts });
+    new Chart(document.getElementById('viewGrowthChart'), { type:'line', data:{ labels:dates.map(d=>d.slice(5)), datasets:[{label:'Views', data:views, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.1)', fill:true, tension:0.4}] }, options:opts });
+    new Chart(document.getElementById('newLostChart'), { type:'bar', data:{ labels:dates.map(d=>d.slice(5)), datasets:[{label:'New Followers', data:newF, backgroundColor:'rgba(16,185,129,0.7)'}] }, options:opts });
+});
+</script>
+{% endif %}
+{% endblock %}

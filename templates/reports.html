@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Reports — Page Analytics{% endblock %}
+{% block content %}
+{% if not has_data %}
+<div class="empty-state"><div class="empty-icon">📑</div><h2>No Data</h2></div>
+{% else %}
+<div class="page-header">
+    <h1>📑 {{ report_type | capitalize }} Report</h1>
+    {% if is_demo %}<span class="badge badge-demo">DEMO</span>{% endif %}
+    <div class="report-toggle">
+        <a href="/reports?report_type=weekly&page_id={{ selected_page.id }}" class="btn btn-sm {{ 'btn-primary' if report_type == 'weekly' else '' }}">Weekly</a>
+        <a href="/reports?report_type=monthly&page_id={{ selected_page.id }}" class="btn btn-sm {{ 'btn-primary' if report_type == 'monthly' else '' }}">Monthly</a>
+    </div>
+</div>
+
+{% if report %}
+<!-- Executive Summary -->
+<div class="card report-summary">
+    <div class="card-header"><h3>📊 Executive Summary</h3><span class="card-subtitle">{{ report.period }}</span></div>
+    <p class="performance-narrative">{{ report.executive_summary }}</p>
+</div>
+
+<!-- KPI Overview -->
+<div class="kpi-grid">
+    {% if report.views and report.views.has_data %}
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">👁️</span><span class="kpi-label">Total Views</span></div><div class="kpi-value">{{ format_number(report.views.total_views) }}</div><div class="kpi-change {{ 'positive' if report.views.growth_percent > 0 else 'negative' }}">{{ "%.1f"|format(report.views.growth_percent) }}%</div></div>
+    {% endif %}
+    {% if report.engagement and report.engagement.has_data %}
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">🔥</span><span class="kpi-label">Engagement</span></div><div class="kpi-value">{{ "%.2f"|format(report.engagement.engagement_rate) }}%</div></div>
+    {% endif %}
+    {% if report.followers and report.followers.has_data %}
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">👥</span><span class="kpi-label">Follower Growth</span></div><div class="kpi-value">{{ '+' if report.followers.net_growth > 0 else '' }}{{ format_number(report.followers.net_growth) }}</div></div>
+    {% endif %}
+    <div class="kpi-card"><div class="kpi-header"><span class="kpi-icon">📝</span><span class="kpi-label">Posts</span></div><div class="kpi-value">{{ report.posts_published }}</div></div>
+</div>
+
+<!-- Weekly Breakdown (Monthly only) -->
+{% if report_type == 'monthly' and report.weekly_breakdown %}
+<div class="card">
+    <div class="card-header"><h3>📅 Week-by-Week</h3></div>
+    <div class="table-responsive">
+        <table class="data-table"><thead><tr><th>Week</th><th>Period</th><th>Views</th><th>Engagement</th><th>New Followers</th></tr></thead>
+            <tbody>{% for w in report.weekly_breakdown %}<tr><td>Week {{ w.week }}</td><td>{{ w.period }}</td><td>{{ format_number(w.views) }}</td><td>{{ "%.2f"|format(w.engagement) }}%</td><td>{{ format_number(w.new_followers) }}</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Top Content -->
+{% if report.top_content %}
+<div class="card">
+    <div class="card-header"><h3>🏆 Top Content</h3></div>
+    <div class="content-list">{% for item in report.top_content %}
+    <div class="content-item"><div class="content-rank">#{{ loop.index }}</div><div class="content-info"><span class="content-title">{{ item.title }}</span><span class="content-meta"><span class="badge badge-type">{{ item.content_type }}</span></span></div><div class="content-stats"><span>👁️ {{ format_number(item.views) }}</span><span>❤️ {{ format_number(item.likes) }}</span></div></div>
+    {% endfor %}</div>
+</div>
+{% endif %}
+
+<!-- Export -->
+<div class="card">
+    <div class="card-header"><h3>📥 Export Report</h3></div>
+    <div class="export-buttons">
+        <a href="/export/csv?page_id={{ selected_page.id }}&period={{ '7days' if report_type == 'weekly' else '30days' }}" class="btn btn-primary">📥 Download CSV</a>
+        <a href="/export/json?page_id={{ selected_page.id }}&period={{ '7days' if report_type == 'weekly' else '30days' }}" class="btn">📄 Download JSON</a>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

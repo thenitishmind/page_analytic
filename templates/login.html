@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login to Page Analytics Dashboard - Track and analyze your social media performance.">
+    <title>Login — Page Analytics Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <!-- Animated Background -->
+        <div class="login-bg">
+            <div class="bg-orb bg-orb-1"></div>
+            <div class="bg-orb bg-orb-2"></div>
+            <div class="bg-orb bg-orb-3"></div>
+        </div>
+        
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">📊</div>
+                <h1>PageAnalytics</h1>
+                <p class="login-subtitle">
+                    {% if mode == 'register' %}
+                    Create your account to start tracking
+                    {% else %}
+                    Sign in to your analytics dashboard
+                    {% endif %}
+                </p>
+            </div>
+            
+            {% if error %}
+            <div class="alert alert-error" id="loginError">
+                <span>⚠️</span> {{ error }}
+            </div>
+            {% endif %}
+            
+            {% if mode == 'register' %}
+            <form method="POST" action="/register" class="login-form" id="registerForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" placeholder="Enter your name" required minlength="2" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Min 6 characters" required minlength="6" autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="registerBtn">Create Account</button>
+                <p class="login-footer-text">
+                    Already have an account? <a href="/login">Sign in</a>
+                </p>
+            </form>
+            {% else %}
+            <form method="POST" action="/login" class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full" id="loginBtn">Sign In</button>
+                <p class="login-footer-text">
+                    Don't have an account? <a href="/register">Create one</a>
+                </p>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

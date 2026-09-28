@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Page Analytics{% endblock %}
+
+{% block content %}
+{% if not has_data %}
+<div class="empty-state">
+    <div class="empty-icon">📊</div>
+    <h2>No Data Available</h2>
+    <p>Add a page and import data to get started, or enable Demo Mode in settings.</p>
+    <a href="/pages" class="btn btn-primary">Add a Page</a>
+</div>
+{% else %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 id="dashboardTitle">{{ selected_page.page_name }}</h1>
+        <span class="badge badge-platform">{{ selected_page.platform | capitalize }}</span>
+        {% if is_demo %}<span class="badge badge-demo">DEMO</span>{% endif %}
+    </div>
+    <div class="page-header-right">
+        <span class="last-updated">Last Updated: {{ end_date }}</span>
+    </div>
+</div>
+
+<!-- Data Quality Warnings -->
+{% if data_warnings %}
+<div class="data-warnings">
+    {% for w in data_warnings %}
+    <div class="warning-item">⚠️ {{ w }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Alerts -->
+{% if alerts %}
+<div class="alerts-strip">
+    {% for alert in alerts %}
+    <div class="alert-chip alert-{{ alert.type }}">
+        <span>{{ alert.icon }}</span>
+        <span>{{ alert.message }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- KPI Cards -->
+<div class="kpi-grid" id="kpiSection">
+    <!-- Views -->
+    <div class="kpi-card" id="kpi-views">
+        <div class="kpi-header">
+            <span class="kpi-icon">👁️</span>
+            <span class="kpi-label">Views</span>
+        </div>
+        <div class="kpi-value">{{ format_number(daily_growth.views) if daily_growth.has_data else '—' }}</div>
+        <div class="kpi-change {% if daily_growth.views_change > 0 %}positive{% elif daily_growth.views_change < 0 %}negative{% endif %}">
+            {% if daily_growth.has_data %}
+            {{ '▲' if daily_growth.views_change > 0 else '▼' if daily_growth.views_change < 0 else '—' }}
+            {{ "%.1f"|format(daily_growth.views_change|abs) }}%
+            <span class="kpi-sub">vs yesterday</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Followers -->
+    <div class="kpi-card" id="kpi-followers">
+        <div class="kpi-header">
+            <span class="kpi-icon">👥</span>
+            <span class="kpi-label">Followers</span>
+        </div>
+        <div class="kpi-value">{{ format_number(daily_growth.followers) if daily_growth.has_data else '—' }}</div>
+        <div class="kpi-change {% if daily_growth.followers_change > 0 %}positive{% elif daily_growth.followers_change < 0 %}negative{% endif %}">
+            {% if daily_growth.has_data %}
+            {{ '+' if daily_growth.followers_change > 0 else '' }}{{ format_number(daily_growth.followers_change) }} today
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Engagement Rate -->
+    <div class="kpi-card" id="kpi-engagement">
+        <div class="kpi-header">
+            <span class="kpi-icon">🔥</span>
+            <span class="kpi-label">Engagement Rate</span>
+        </div>
+        <div class="kpi-value">{{ "%.2f"|format(daily_growth.engagement_rate) if daily_growth.has_data else '—' }}%</div>
+        <div class="kpi-change {% if daily_growth.engagement_change > 0 %}positive{% elif daily_growth.engagement_change < 0 %}negative{% endif %}">
+            {% if daily_growth.has_data %}
+            {{ '▲' if daily_growth.engagement_change > 0 else '▼' if daily_growth.engagement_change < 0 else '—' }}
+            {{ "%.1f"|format(daily_growth.engagement_change|abs) }}%
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Posts -->
+    <div class="kpi-card" id="kpi-posts">
+        <div class="kpi-header">
+            <span class="kpi-icon">📝</span>
+            <span class="kpi-label">Posts Today</span>
+        </div>
+        <div class="kpi-value">{{ daily_growth.posts if daily_growth.has_data else '—' }}</div>
+        <div class="kpi-change neutral">Published</div>
+    </div>
+    
+    <!-- Likes -->
+    <div class="kpi-card" id="kpi-likes">
+        <div class="kpi-header">
+            <span class="kpi-icon">❤️</span>
+            <span class="kpi-label">Likes</span>
+        </div>
+        <div class="kpi-value">{{ format_number(daily_growth.likes) if daily_growth.has_data else '—' }}</div>
+        <div class="kpi-change {% if daily_growth.likes_change > 0 %}positive{% elif daily_growth.likes_change < 0 %}negative{% endif %}">
+            {% if daily_growth.has_data %}
+            {{ '▲' if daily_growth.likes_change > 0 else '▼' }}
+            {{ "%.1f"|format(daily_growth.likes_change|abs) }}%
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Shares -->
+    <div class="kpi-card" id="kpi-shares">
+        <div class="kpi-header">
+            <span class="kpi-icon">🔗</span>
+            <span class="kpi-label">Shares</span>
+        </div>
+        <div class="kpi-value">{{ format_number(daily_growth.shares) if daily_growth.has_data else '—' }}</div>
+        <div class="kpi-change {% if daily_growth.shares_change > 0 %}positive{% elif daily_growth.shares_change < 0 %}negative{% endif %}">
+            {% if daily_growth.has_data %}
+            {{ '▲' if daily_growth.shares_change > 0 else '▼' }}
+            {{ "%.1f"|format(daily_growth.shares_change|abs) }}%
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Comments -->
+    <div class="kpi-card" id="kpi-comments">
+        <div class="kpi-header">
+            <span class="kpi-icon">💬</span>
+            <span class="kpi-label">Comments</span>
+        </div>
+        <div class="kpi-value">{{ format_number(daily_growth.comments) if daily_growth.has_data else '—' }}</div>
+        <div class="kpi-change {% if daily_growth.comments_change > 0 %}positive{% elif daily_growth.comments_change < 0 %}negative{% endif %}">
+            {% if daily_growth.has_data %}
+            {{ '▲' if daily_growth.comments_change > 0 else '▼' }}
+            {{ "%.1f"|format(daily_growth.comments_change|abs) }}%
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Performance Score -->
+    <div class="kpi-card kpi-score" id="kpi-score">
+        <div class="kpi-header">
+            <span class="kpi-icon">⭐</span>
+            <span class="kpi-label">Performance Score</span>
+        </div>
+        <div class="kpi-value score-value">{{ perf_score.total_score if perf_score.has_data else '—' }}<span class="score-max">/100</span></div>
+        <div class="score-bar">
+            <div class="score-fill" style="width: {{ perf_score.total_score if perf_score.has_data else 0 }}%"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="charts-grid">
+    <!-- Views Chart -->
+    <div class="card chart-card" id="viewsChartCard">
+        <div class="card-header">
+            <h3>📈 Daily Views</h3>
+            {% if view_data.has_data %}
+            <div class="chart-stats">
+                <span>Total: {{ format_number(view_data.total_views) }}</span>
+                <span class="divider">|</span>
+                <span>Avg: {{ format_number(view_data.avg_daily_views) }}</span>
+                <span class="divider">|</span>
+                <span class="{{ 'positive' if view_data.growth_percent > 0 else 'negative' }}">
+                    {{ "%.1f"|format(view_data.growth_percent) }}%
+                </span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="chart-container">
+            <canvas id="viewsChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Engagement Chart -->
+    <div class="card chart-card" id="engagementChartCard">
+        <div class="card-header">
+            <h3>🔥 Engagement Rate</h3>
+            {% if engagement_data.has_data %}
+            <div class="chart-stats">
+                <span>Rate: {{ "%.2f"|format(engagement_data.engagement_rate) }}%</span>
+                <span class="divider">|</span>
+                <span class="{{ 'positive' if engagement_data.engagement_change > 0 else 'negative' }}">
+                    {{ "%.1f"|format(engagement_data.engagement_change) }}%
+                </span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="chart-container">
+            <canvas id="engagementChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Follower & Interaction Charts -->
+<div class="charts-grid">
+    <div class="card chart-card" id="followersChartCard">
+        <div class="card-header">
+            <h3>👥 Followers</h3>
+            {% if follower_data.has_data %}
+            <div class="chart-stats">
+                <span>Current: {{ format_number(follower_data.current_followers) }}</span>
+                <span class="divider">|</span>
+                <span>Net: {{ '+' if follower_data.net_growth > 0 else '' }}{{ format_number(follower_data.net_growth) }}</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="chart-container">
+            <canvas id="followersChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="card chart-card" id="interactionsChartCard">
+        <div class="card-header">
+            <h3>💬 Interactions</h3>
+        </div>
+        <div class="chart-container">
+            <canvas id="interactionsChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- View Analysis Section -->
+{% if view_data.has_data %}
+<div class="card" id="viewAnalysis">
+    <div class="card-header">
+        <h3>🔍 View Analysis</h3>
+    </div>
+    <div class="analysis-grid">
+        <div class="analysis-item">
+            <span class="analysis-label">Total Views</span>
+            <span class="analysis-value">{{ format_number(view_data.total_views) }}</span>
+        </div>
+        <div class="analysis-item">
+            <span class="analysis-label">Avg Daily Views</span>
+            <span class="analysis-value">{{ format_number(view_data.avg_daily_views) }}</span>
+        </div>
+        <div class="analysis-item">
+            <span class="analysis-label">Highest Day</span>
+            <span class="analysis-value">{{ format_number(view_data.highest_daily_views) }}</span>
+            <span class="analysis-sub">{{ view_data.best_view_day }}</span>
+        </div>
+        <div class="analysis-item">
+            <span class="analysis-label">Lowest Day</span>
+            <span class="analysis-value">{{ format_number(view_data.lowest_daily_views) }}</span>
+            <span class="analysis-sub">{{ view_data.worst_view_day }}</span>
+        </div>
+        <div class="analysis-item">
+            <span class="analysis-label">Median Daily</span>
+            <span class="analysis-value">{{ format_number(view_data.median_daily_views) }}</span>
+        </div>
+        <div class="analysis-item">
+            <span class="analysis-label">7-Day Average</span>
+            <span class="analysis-value">{{ format_number(view_data.seven_day_avg) }}</span>
+        </div>
+        <div class="analysis-item">
+            <span class="analysis-label">30-Day Average</span>
+            <span class="analysis-value">{{ format_number(view_data.thirty_day_avg) }}</span>
+        </div>
+        <div class="analysis-item">
+            <span class="analysis-label">Growth</span>
+            <span class="analysis-value {{ 'positive' if view_data.growth_percent > 0 else 'negative' }}">
+                {{ "%.1f"|format(view_data.growth_percent) }}% ({{ view_data.growth_label }})
+            </span>
+        </div>
+    </div>
+    
+    {% if view_data.spikes %}
+    <div class="spikes-section">
+        <h4>📌 Notable Changes (Statistical Observations)</h4>
+        {% for spike in view_data.spikes[:3] %}
+        <div class="spike-item {{ spike.type }}">
+            {{ spike.message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Performance Score Breakdown -->
+{% if perf_score.has_data %}
+<div class="card" id="scoreBreakdown">
+    <div class="card-header">
+        <h3>⭐ Performance Score: {{ perf_score.total_score }}/100</h3>
+        <span class="card-subtitle">{{ perf_score.formula }}</span>
+    </div>
+    <div class="score-components">
+        {% for key, comp in perf_score.components.items() %}
+        <div class="score-component">
+            <div class="comp-header">
+                <span class="comp-label">{{ comp.label }}</span>
+                <span class="comp-score">{{ comp.score }}/100</span>
+            </div>
+            <div class="comp-bar">
+                <div class="comp-fill" style="width: {{ comp.score }}%; --hue: {{ comp.score * 1.2 }}"></div>
+            </div>
+            <span class="comp-weight">Weight: {{ "%.0f"|format(comp.weight * 100) }}%</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Today's Performance Summary -->
+{% if performance_summary %}
+<div class="card recommendations-card" id="todayPerformance">
+    <div class="card-header"><h3>🎯 Today's Performance</h3></div>
+    
+    {% if performance_summary.performance %}
+    <div class="rec-section">
+        <p class="performance-narrative">{{ performance_summary.performance }}</p>
+    </div>
+    {% endif %}
+    
+    {% if performance_summary.what_is_working %}
+    <div class="rec-section">
+        <h4 class="rec-title positive">✅ What Is Working</h4>
+        {% for item in performance_summary.what_is_working %}
+        <p class="rec-item">{{ item }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if performance_summary.what_needs_attention %}
+    <div class="rec-section">
+        <h4 class="rec-title warning">⚠️ What Needs Attention</h4>
+        {% for item in performance_summary.what_needs_attention %}
+        <p class="rec-item">{{ item }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="rec-section">
+        <h4 class="rec-title">📋 What To Do Today</h4>
+        <ol class="action-list">
+            {% for item in performance_summary.what_to_do %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ol>
+    </div>
+</div>
+{% endif %}
+
+<!-- Top & Low Performing Content -->
+<div class="content-grid">
+    <!-- Top Content -->
+    <div class="card" id="topContent">
+        <div class="card-header">
+            <h3>🏆 Top Performing Content</h3>
+        </div>
+        <div class="content-list">
+            {% for item in top_content %}
+            <div class="content-item">
+                <div class="content-rank">#{{ loop.index }}</div>
+                <div class="content-info">
+                    <span class="content-title">{{ item.title }}</span>
+                    <span class="content-meta">
+                        <span class="badge badge-type">{{ item.content_type }}</span>
+                        {{ item.published_at[:10] if item.published_at else '' }}
+                    </span>
+                </div>
+                <div class="content-stats">
+                    <span>👁️ {{ format_number(item.views) }}</span>
+                    <span>❤️ {{ format_number(item.likes) }}</span>
+                    <span>💬 {{ item.comments }}</span>
+                    <span>🔗 {{ item.shares }}</span>
+                    <span class="engagement-badge">{{ "%.1f"|format(item.engagement_rate) }}%</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Low Content -->
+    <div class="card" id="lowContent">
+        <div class="card-header">
+            <h3>⚠️ Content That Needs Attention</h3>
+        </div>
+        <div class="content-list">
+            {% for item in low_content %}
+            <div class="content-item low-perf">
+                <div class="content-info">
+                    <span class="content-title">{{ item.title }}</span>
+                    <span class="content-meta">
+                        <span class="badge badge-type">{{ item.content_type }}</span>
+                        Views: {{ format_number(item.views) }} (Avg: {{ format_number(item.avg_views) }})
+                    </span>
+                </div>
+                <div class="content-note">{{ item.note }}</div>
+                {% if item.improvement_area %}
+                <div class="improvement-tip">💡 {{ item.improvement_area }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Daily Performance Table -->
+<div class="card" id="dailyTable">
+    <div class="card-header">
+        <h3>📅 Daily Performance</h3>
+        <div class="table-actions">
+            <a href="/export/csv?page_id={{ selected_page.id }}&period={{ period }}" class="btn btn-sm">📥 Export CSV</a>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table" id="performanceTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Date ↕</th>
+                    <th onclick="sortTable(1)">Views ↕</th>
+                    <th onclick="sortTable(2)">Followers ↕</th>
+                    <th onclick="sortTable(3)">Likes ↕</th>
+                    <th onclick="sortTable(4)">Comments ↕</th>
+                    <th onclick="sortTable(5)">Shares ↕</th>
+                    <th onclick="sortTable(6)">Posts ↕</th>
+                    <th onclick="sortTable(7)">Engagement ↕</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in daily_metrics[:30] %}
+                <tr>
+                    <td>{{ m.metric_date.strftime('%d %b') }}</td>
+                    <td>{{ format_number(m.views) }}</td>
+                    <td>{{ format_number(m.followers) }}</td>
+                    <td>{{ format_number(m.likes) }}</td>
+                    <td>{{ format_number(m.comments) }}</td>
+                    <td>{{ format_number(m.shares) }}</td>
+                    <td>{{ m.posts }}</td>
+                    <td>{{ "%.1f"|format(m.engagement_rate) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Daily Action Plan -->
+{% if action_plan %}
+<div class="card action-plan-card" id="actionPlan">
+    <div class="card-header"><h3>📋 Today's Action Plan</h3></div>
+    <div class="action-plan-grid">
+        <div class="action-section">
+            <h4>🌅 Morning</h4>
+            <ul>
+                {% for item in action_plan.morning %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="action-section">
+            <h4>🎬 Content</h4>
+            <ul>
+                {% for item in action_plan.content %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="action-section">
+            <h4>💬 Engagement</h4>
+            <ul>
+                {% for item in action_plan.engagement %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="action-section">
+            <h4>🌙 Evening</h4>
+            <ul>
+                {% for item in action_plan.evening %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Page Health Summary -->
+{% if health_summary %}
+<div class="card health-card" id="healthSummary">
+    <div class="card-header"><h3>🏥 Page Health Summary</h3></div>
+    <div class="health-grid">
+        <div class="health-item">
+            <span class="health-label">Views</span>
+            <span class="health-status health-{{ health_summary.views|lower }}">{{ health_summary.views }}</span>
+        </div>
+        <div class="health-item">
+            <span class="health-label">Followers</span>
+            <span class="health-status health-{{ health_summary.followers|lower }}">{{ health_summary.followers }}</span>
+        </div>
+        <div class="health-item">
+            <span class="health-label">Engagement</span>
+            <span class="health-status health-{{ health_summary.engagement|lower }}">{{ health_summary.engagement }}</span>
+        </div>
+        <div class="health-item">
+            <span class="health-label">Content</span>
+            <span class="health-status">{{ health_summary.content_performance }}</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Today's Priorities -->
+{% if priorities %}
+<div class="card priorities-card" id="priorities">
+    <div class="card-header"><h3>🎯 Today's Priorities</h3></div>
+    <ol class="priorities-list">
+        {% for p in priorities %}
+        <li class="priority-item">{{ p }}</li>
+        {% endfor %}
+    </ol>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script>
+// Chart data from server
+const chartDates = {{ chart_dates | tojson }};
+const chartViews = {{ chart_views | tojson }};
+const chartFollowers = {{ chart_followers | tojson }};
+const chartLikes = {{ chart_likes | tojson }};
+const chartComments = {{ chart_comments | tojson }};
+const chartShares = {{ chart_shares | tojson }};
+const chartEngagement = {{ chart_engagement | tojson }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+    
+    const baseOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: textColor, font: { family: 'Inter' } } },
+        },
+        scales: {
+            x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Inter', size: 11 } } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Inter', size: 11 } } },
+        },
+    };
+    
+    // Views Chart
+    new Chart(document.getElementById('viewsChart'), {
+        type: 'line',
+        data: {
+            labels: chartDates.map(d => d.slice(5)),
+            datasets: [{
+                label: 'Views',
+                data: chartViews,
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99,102,241,0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+                pointHoverRadius: 6,
+            }],
+        },
+        options: baseOptions,
+    });
+    
+    // Engagement Chart
+    new Chart(document.getElementById('engagementChart'), {
+        type: 'line',
+        data: {
+            labels: chartDates.map(d => d.slice(5)),
+            datasets: [{
+                label: 'Engagement %',
+                data: chartEngagement,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245,158,11,0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+            }],
+        },
+        options: baseOptions,
+    });
+    
+    // Followers Chart
+    new Chart(document.getElementById('followersChart'), {
+        type: 'line',
+        data: {
+            labels: chartDates.map(d => d.slice(5)),
+            datasets: [{
+                label: 'Followers',
+                data: chartFollowers,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16,185,129,0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+            }],
+        },
+        options: baseOptions,
+    });
+    
+    // Interactions Chart (stacked)
+    new Chart(document.getElementById('interactionsChart'), {
+        type: 'bar',
+        data: {
+            labels: chartDates.map(d => d.slice(5)),
+            datasets: [
+                { label: 'Likes', data: chartLikes, backgroundColor: 'rgba(239,68,68,0.7)', stack: 'interactions' },
+                { label: 'Comments', data: chartComments, backgroundColor: 'rgba(59,130,246,0.7)', stack: 'interactions' },
+                { label: 'Shares', data: chartShares, backgroundColor: 'rgba(168,85,247,0.7)', stack: 'interactions' },
+            ],
+        },
+        options: {
+            ...baseOptions,
+            scales: {
+                ...baseOptions.scales,
+                x: { ...baseOptions.scales.x, stacked: true },
+                y: { ...baseOptions.scales.y, stacked: true },
+            },
+        },
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

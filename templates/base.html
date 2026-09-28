@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ user.theme if user else 'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Page Analytics & Performance Dashboard - Track views, engagement, followers, and content performance.">
+    <title>{% block title %}Page Analytics Dashboard{% endblock %}</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if user %}
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">📊</div>
+                    <span class="logo-text">PageAnalytics</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">☰</button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}" id="nav-dashboard">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="/pages" class="nav-item {% if '/pages' in request.url.path %}active{% endif %}" id="nav-pages">
+                    <span class="nav-icon">📄</span>
+                    <span class="nav-label">Pages</span>
+                </a>
+                
+                <div class="nav-section-title">Analytics</div>
+                <a href="/analytics/daily" class="nav-item {% if request.url.path == '/analytics/daily' %}active{% endif %}" id="nav-daily">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Daily Analytics</span>
+                </a>
+                <a href="/analytics/content" class="nav-item {% if request.url.path == '/analytics/content' %}active{% endif %}" id="nav-content">
+                    <span class="nav-icon">🎬</span>
+                    <span class="nav-label">Content</span>
+                </a>
+                <a href="/analytics/engagement" class="nav-item {% if request.url.path == '/analytics/engagement' %}active{% endif %}" id="nav-engagement">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-label">Engagement</span>
+                </a>
+                <a href="/analytics/growth" class="nav-item {% if request.url.path == '/analytics/growth' %}active{% endif %}" id="nav-growth">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Growth</span>
+                </a>
+                
+                <div class="nav-section-title">Insights</div>
+                <a href="/recommendations" class="nav-item {% if request.url.path == '/recommendations' %}active{% endif %}" id="nav-recommendations">
+                    <span class="nav-icon">💡</span>
+                    <span class="nav-label">Recommendations</span>
+                </a>
+                <a href="/reports" class="nav-item {% if request.url.path == '/reports' %}active{% endif %}" id="nav-reports">
+                    <span class="nav-icon">📑</span>
+                    <span class="nav-label">Reports</span>
+                </a>
+                
+                <div class="nav-section-title">System</div>
+                <a href="/settings" class="nav-item {% if request.url.path == '/settings' %}active{% endif %}" id="nav-settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">{{ user.name[0] }}</div>
+                    <div class="user-details">
+                        <span class="user-name">{{ user.name }}</span>
+                        <span class="user-email">{{ user.email }}</span>
+                    </div>
+                </div>
+                <a href="/logout" class="logout-btn" id="logout-btn">Logout</a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navigation -->
+            <header class="top-nav">
+                <div class="top-nav-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                    {% if pages is defined and pages %}
+                    <div class="page-selector">
+                        <select id="pageSelector" onchange="switchPage(this.value)">
+                            {% for p in pages %}
+                            <option value="{{ p.id }}" {% if selected_page and p.id == selected_page.id %}selected{% endif %}>
+                                {{ p.page_name }} ({{ p.platform }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="top-nav-right">
+                    {% if period is defined %}
+                    <div class="date-selector">
+                        <select id="periodSelector" onchange="changePeriod(this.value)">
+                            <option value="today" {% if period == 'today' %}selected{% endif %}>Today</option>
+                            <option value="yesterday" {% if period == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                            <option value="7days" {% if period == '7days' %}selected{% endif %}>Last 7 Days</option>
+                            <option value="30days" {% if period == '30days' %}selected{% endif %}>Last 30 Days</option>
+                            <option value="90days" {% if period == '90days' %}selected{% endif %}>Last 90 Days</option>
+                            <option value="this_month" {% if period == 'this_month' %}selected{% endif %}>This Month</option>
+                            <option value="last_month" {% if period == 'last_month' %}selected{% endif %}>Last Month</option>
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    <button class="icon-btn" onclick="location.reload()" title="Refresh" id="refreshBtn">🔄</button>
+                    
+                    <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme" id="themeToggle">
+                        🌙
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <div class="content-area">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% else %}
+    {% block fullpage %}{% endblock %}
+    {% endif %}
+    
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
